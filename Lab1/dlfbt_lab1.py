@@ -49,7 +49,7 @@ class LinearRegressionModel(object):
         """
 
         # --- TO-DO block: Compute the model output y
-        pass
+        y = np.dot(x,self.w) + self.b
         # --- End of TO-DO block
 
         return y
@@ -77,7 +77,9 @@ class LinearRegressionModel(object):
         y = self.predict(x)
 
         # --- TO-DO block: Compute the gradients db and dw
-        pass
+        y_minus_t = y - t
+        dw = np.sum(y_minus_t*x,keepdims=True)
+        db = np.sum(y_minus_t,axis=0,keepdims=True)
         # --- End of TO-DO block
 
         return db, dw
