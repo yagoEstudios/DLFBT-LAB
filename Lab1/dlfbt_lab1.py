@@ -101,7 +101,12 @@ class LinearRegressionModel(object):
         db, dw = self.compute_gradients(x, t)
 
         # --- TO-DO block: Update the model parameters b and w
-        pass
+        y = self.predict(x)
+        y_minus_t = y - t
+        self.w -= eta*dw
+        self.b -= eta*db
+
+        
         # --- End of TO-DO block
 
     def fit(self, x, t, eta, num_iters):
