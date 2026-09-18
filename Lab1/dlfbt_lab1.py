@@ -78,9 +78,10 @@ class LinearRegressionModel(object):
 
         # --- TO-DO block: Compute the gradients db and dw
         y_minus_t = y - t
-        dw = np.sum(y_minus_t*x,keepdims=True)
-        db = np.sum(y_minus_t,axis=0,keepdims=True)
+        dw = np.asarray(np.dot(x.T, y_minus_t) / x.shape[0])
+        db = np.asarray(np.mean(y_minus_t, axis=0, keepdims=True))
         # --- End of TO-DO block
+        
 
         return db, dw
 
