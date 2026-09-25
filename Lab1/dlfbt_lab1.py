@@ -2,8 +2,8 @@
 # DLFBT 2026/2027
 # Lab assignment 1
 # Authors:
-#   Name1 NIA1 (complete your name and NIA here)
-#   Name2 NIA2 (complete your name and NIA here)
+#   Yago Clerigo Ruiz 483273 (complete your name and NIA here)
+#   Alvaro Saiz Lopez 487478 (complete your name and NIA here)
 # ===============================================================================
 
 import numpy as np
@@ -48,7 +48,7 @@ class LinearRegressionModel(object):
             linear regression model to the input x
         """
 
-        # --- TO-DO block: Compute the model output y -- DONE
+        # --- TO-DO block: Compute the model output y
         y = np.dot(x,self.w) + self.b
         # --- End of TO-DO block
 
@@ -76,7 +76,7 @@ class LinearRegressionModel(object):
         """
         y = self.predict(x)
 
-        # --- TO-DO block: Compute the gradients db and dw -- DONE
+        # --- TO-DO block: Compute the gradients db and dw
         delta = (y - t) / x.shape[0]
         db = np.sum(delta, axis = 0, keepdims=True)
         dw = np.dot(x.T, delta)
@@ -101,7 +101,7 @@ class LinearRegressionModel(object):
         """
         db, dw = self.compute_gradients(x, t)
 
-        # --- TO-DO block: Update the model parameters b and w -- DONE
+        # --- TO-DO block: Update the model parameters b and w
         self.b = self.b - eta * db
         self.w = self.w - eta * dw                
         # --- End of TO-DO block
@@ -250,7 +250,7 @@ class BasicTF:
         # --- compute the gradient
         with tf.GradientTape() as tape:
             y = f(x)
-        dy_dx = tape.gradient(y, x).numpy() ## Needs to be explained
+        dy_dx = tape.gradient(y, x).numpy()
 
         # --- End of TO-DO block
 
@@ -839,8 +839,8 @@ class NeuralNetwork_TF(object):
         with tf.GradientTape() as tape:
             loss = self.get_loss(x, t, loss_function)
         grads = tape.gradient(loss, self.b + self.W)
-        db = grads[: self.nlayers]  # These need an explaination
-        dW = grads[self.nlayers :]  # These need an explaination
+        db = grads[: self.nlayers]
+        dW = grads[self.nlayers :]
         # --- End of TO-DO block
 
         return db, dW
