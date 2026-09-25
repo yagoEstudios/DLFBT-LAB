@@ -2,8 +2,8 @@
 # DLFBT 2026/2027
 # Lab assignment 1
 # Authors:
-#   Yago Clerigo Ruiz 483273 (complete your name and NIA here)
-#   Alvaro Saiz Lopez 487478 (complete your name and NIA here)
+#   Yago Clerigo Ruiz 483273
+#   Alvaro Saiz Lopez 487478
 # ===============================================================================
 
 import numpy as np
