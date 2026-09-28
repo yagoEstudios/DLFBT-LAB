@@ -290,9 +290,19 @@ def train_model(
     """
 
     # TODO:
-    # history = model.fit(...)
+    callback = make_early_stopping(patience=patience)
+    history = model.fit(
+        x=split.X_train,
+        y=split.y_train,
+        batch_size = batch_size,
+        epochs = epochs,
+        verbose = verbose,
+        callbacks = callback,
+        validation_data=(split.X_val,split.y_val)
+        
+    )
 
-    raise NotImplementedError("TODO: implement train_model")
+    return history
 
 
 def evaluate_model(model, split):
@@ -315,8 +325,19 @@ def evaluate_model(model, split):
 
     # TODO:
     # loss, accuracy = model.evaluate(...)
+    loss, accuracy = model.evaluate(
+        x=split.X_test,
+        y=split.y_test
+    )
 
-    raise NotImplementedError("TODO: implement evaluate_model")
+    results = {
+        "test_loss": loss,
+        "test_accuracy": accuracy
+    }
+
+    return results
+
+    #raise NotImplementedError("TODO: implement evaluate_model")
 
 
 def build_improved_model(input_dim):
@@ -342,8 +363,20 @@ def build_improved_model(input_dim):
     """
 
     # TODO: build the architecture.
+    model = tf.keras.Sequential([
+        tf.keras.layers.Input(shape=(input_dim,)),
+        tf.keras.layers.Dense(32, activation="relu"),
+        tf.keras.layers.Dropout(0.15),
+        tf.keras.layers.Dense(16, activation="relu"),
+        tf.keras.layers.Dense(1,activation="sigmoid")
+    ])
+    
 
     # TODO: compile it, preferably by reusing compile_binary_model(...).
+
+    compile_binary_model(model,optimizer="adam",learning_rate=1e-3)
+
+    return model
 
     raise NotImplementedError("TODO: implement build_improved_model")
 
@@ -450,11 +483,11 @@ def optimizer_from_name(name, learning_rate=1e-3):
         case "nesterov":
             return tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9, nesterov=True)
         case "adagrad":
-            tf.keras.optimizers.AdaGrad(learning_rate=learning_rate)
+            return tf.keras.optimizers.AdaGrad(learning_rate=learning_rate)
         case "rmsprop":
-            tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
+            return tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
         case "adam":
-            tf.keras.optimizers.Adam(learning_rate=learning_rate)
+            return tf.keras.optimizers.Adam(learning_rate=learning_rate)
                
 
 
