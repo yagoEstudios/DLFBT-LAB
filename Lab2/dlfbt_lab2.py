@@ -48,15 +48,18 @@ def load_phoneme():
     """
 
     # TODO: load the CSV.
-    # dataset = ...
+    path = "../data/lab2/phoneme.csv"
+    dataset = np.loadtxt(path, delimiter=",")
 
     # TODO: perform a shape / validity check.
-
+    if dataset.ndim != 2 or dataset.shape[1] < 2:
+        raise ValueError(f"Unexpected dataset shape: {dataset.shape}")
+    
     # TODO:
-    # X = ...
-    # y = ...
+    X = dataset[:, :-1].astype(np.float64)
+    y = dataset[:, -1].astype(np.float64)
 
-    raise NotImplementedError("TODO: implement load_phoneme")
+    return X, y    
 
 
 def dataset_overview(X, y):
@@ -129,18 +132,38 @@ def prepare_data(
     """
 
     # TODO: validate test_size and val_size.
-
+    if test_size < 0.0 or test_size > 1.0:
+        raise ValueError(f"Unexpected split ratio test_size : {test_size}")
+    if val_size < 0.0 or val_size > 1.0:
+        raise ValueError(f"Unexpected split ratio val_size : {val_size}")
+    train_size = 1 - val_size - test_size
+    if train_size < 0.0 or train_size > 1.0:
+        raise ValueError(f"Unexpected split ratio train_size : {train_size}")
+        
     # TODO: first split -> train+validation and test.
-
+    X_trval, X_test, y_trval, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=random_state, stratify=y,
+    )
+    
     # TODO: compute the validation fraction relative to train+validation.
+    val_fraction = val_size / (1.0 - test_size)
 
     # TODO: second split -> train and validation.
+    X_train, X_val, y_train, y_val = train_test_split(
+        X_trval, y_trval, test_size=val_fraction, random_state=random_state, stratify=y_trval,
+    )
 
     # TODO: optionally fit StandardScaler ONLY on X_train.
-
+    scaler = None
+    if normalize:
+        scaler = StandardScaler().fit(X_train)
+        X_train = scaler.transform(X_train)
+        X_val = scaler.transform(X_val)
+        X_test = scaler.transform(X_test)
+                
     # TODO: return DataSplit(...)
 
-    raise NotImplementedError("TODO: implement prepare_data")
+    return DataSplit(X_train, X_val, X_test, y_train, y_val, y_test, scaler)
 
 
 def build_baseline_model(input_dim, hidden_units=8):
@@ -163,9 +186,12 @@ def build_baseline_model(input_dim, hidden_units=8):
     """
 
     # TODO:
-    # model = tf.keras.Sequential([...])
-
-    raise NotImplementedError("TODO: implement build_baseline_model")
+    model = tf.keras.Sequential([
+        tf.keras.layers.Input(shape=(input_dim,)),
+        tf.keras.layers.Dense(hidden_units, activation="relu"),
+        tf.keras.layers.Dense(1, activation="sigmoid"),
+    ])
+    return model
 
 
 def compile_binary_model(
@@ -199,15 +225,22 @@ def compile_binary_model(
     """
 
     # TODO:
-    # If optimizer is a string AND learning_rate is provided,
-    # create the appropriate tf.keras.optimizers.* object.
+        # If optimizer is a string AND learning_rate is provided,
+        # create the appropriate tf.keras.optimizers.* object.
 
-    # TODO:
-    # model.compile(
-    #
-    # )
+    if isinstance(optimizer, str) and learning_rate is not None:
+        optimizer = optimizer_from_name(optimizer, learning_rate=learning_rate)
 
-    raise NotImplementedError("TODO: implement compile_binary_model")
+        # TODO:
+    
+
+    model.compile(
+        optimizer=optimizer,
+        loss="binary_crossentropy",
+        metrics=["accuracy"],
+    )
+
+    return model
 
 
 def make_early_stopping(patience=20):
@@ -409,8 +442,20 @@ def optimizer_from_name(name, learning_rate=1e-3):
     """
 
     # TODO: return the matching tf.keras.optimizers optimizer.
-
-    raise NotImplementedError("TODO: implement optimizer_from_name")
+    match name:
+        case "sgd":
+                return tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.0)
+        case "momentum":
+                return tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9)
+        case "nesterov":
+            return tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9, nesterov=True)
+        case "adagrad":
+            tf.keras.optimizers.AdaGrad(learning_rate=learning_rate)
+        case "rmsprop":
+            tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
+        case "adam":
+            tf.keras.optimizers.Adam(learning_rate=learning_rate)
+               
 
 
 def run_optimizer_experiment(
