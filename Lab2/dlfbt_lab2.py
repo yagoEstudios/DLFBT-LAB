@@ -401,7 +401,16 @@ def build_regularized_model(input_dim, l2_strength=1e-4):
     """
 
     # TODO:
-    # reg = tf.keras.regularizers.l2(...)
+    reg = tf.keras.regularizers.l2(l2_strength)
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Input(shape=(input_dim,)),
+        tf.keras.layers.Dense(32, activation="relu",kernel_regularizer=reg),
+        tf.keras.layers.Dense(16, activation="relu",kernel_regularizer=reg),
+        tf.keras.layers.Dense(1,activation="sigmoid")
+    ])
+
+    return model
 
     # TODO: build and return the Sequential model.
 
@@ -426,7 +435,18 @@ def build_dropout_model(input_dim, rate=0.25):
     TODO
     ----
     Create and return the model.
+
     """
+
+    model = tf.keras.Sequential([
+        tf.keras.layers.Input(shape=(input_dim,)),
+        tf.keras.layers.Dense(32, activation="relu"),
+        tf.keras.layers.Dropout(rate),
+        tf.keras.layers.Dense(16, activation="relu"),
+        tf.keras.layers.Dense(1,activation="sigmoid")
+    ])
+
+    return model
 
     # TODO: build and return the Sequential model.
 
@@ -483,7 +503,7 @@ def optimizer_from_name(name, learning_rate=1e-3):
         case "nesterov":
             return tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.9, nesterov=True)
         case "adagrad":
-            return tf.keras.optimizers.AdaGrad(learning_rate=learning_rate)
+            return tf.keras.optimizers.Adagrad(learning_rate=learning_rate)
         case "rmsprop":
             return tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
         case "adam":
