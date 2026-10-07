@@ -89,7 +89,6 @@ class DataSplit:
 def prepare_data(
     X,
     y,
-    *,
     test_size=0.20,
     val_size=0.20,
     normalize=True,
@@ -514,7 +513,6 @@ def optimizer_from_name(name, learning_rate=1e-3):
 def run_optimizer_experiment(
     split,
     optimizer_name,
-    *,
     epochs=150,
     batch_size=32,
     learning_rate=1e-3,

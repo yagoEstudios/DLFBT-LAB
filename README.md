@@ -74,7 +74,7 @@ The repository contains two laboratory assignments and one final project:
 
 - [Lab 1](#lab-1)
 - [Lab 2](#lab-2)
-- [Final Project](#final-project)
+- [Final Project](#Final-project)
 
 ---
 
@@ -82,11 +82,11 @@ The repository contains two laboratory assignments and one final project:
 
 For each laboratory, submit **only the corresponding Python file**:
 
-| Lab           | File to Submit  |
-| ------------- | --------------- |
-| Lab 1         | `dlfbt_lab1.py` |
-| Lab 2         | `dlfbt_lab2.py` |
-| Final Project | `dlfbt_lab3.py` |
+| Lab           | File to Submit            |
+| ------------- | ------------------------- |
+| Lab 1         | `dlfbt_lab1.py`           |
+| Lab 2         | `dlfbt_lab2.py`           |
+| Final Project | `dlfbt_final_project.zip` |
 
 ### Submission Rules
 
@@ -100,19 +100,18 @@ Upload the requested file to the [course Moodle page](https://posgrado.uam.es/co
 
 ### Due Dates
 
-| Lab               | Due Date                    |
-| ----------------- | --------------------------- |
-| **Lab 1**         | Friday, 2026-09-25 at 13:00 |
-| **Lab 2**         | Friday, 2026-10-09 at 13:00 |
-| **Final Project** | Friday, 2026-10-23 at 13:00 |
+| Lab               | Due Date                    | Status             |
+| ----------------- | --------------------------- | ------------------ |
+| **Lab 1**         | Friday, 2026-09-25 at 13:00 | ❌ Deadline passed |
+| **Lab 2**         | Friday, 2026-10-09 at 13:00 | ⏳ Not yet due     |
+| **Final Project** | Friday, 2026-10-23 at 13:00 | ⏳ Not yet due     |
 
 ### Exam Dates
 
-| Lab       | Exam Date                   |
-| --------- | --------------------------- |
-| **Lab 1** | Friday, 2026-09-25 at 16:00 |
-| **Lab 2** | Friday, 2026-10-09 at 18:00 |
-
+| Lab       | Exam Date                   | Status                               |
+| --------- | --------------------------- | ------------------------------------ |
+| **Lab 1** | Friday, 2026-09-25 at 16:00 | ✅ Done — grades published on Moodle |
+| **Lab 2** | Friday, 2026-10-09 at 18:00 | ⏳ Upcoming                          |
 
 ---
 
@@ -158,15 +157,15 @@ Use the notebook to run the exercises and verify that your implementation produc
 
 ## Lab 3 (Final Project)
 
-## Final Project 
+## Final Project
 
-The Final Project replaces Lab 3. 
+The Final Project replaces Lab 3.
 
-Follow the instructions provided in the **Final Project notebook and project description**. 
+Follow the instructions provided in the **Final Project notebook and project description**.
 
-Complete the project in pairs and submit the required files before the deadline. 
+Complete the project in pairs and submit the required files before the deadline.
 
-The Final Project is evaluated based on the submitted project only. 
+The Final Project is evaluated based on the submitted project only.
 
 **There is no exam for the Final Project.**
 
@@ -178,20 +177,9 @@ If you find an error, bug, broken test, missing dependency, or unclear instructi
 
 [Create a GitHub Issue](https://github.com/samanemami/DLFBT-LAB/issues)
 
-When reporting an issue, please include, when possible:
-
-- A short description of the problem
-- The laboratory where the problem appears
-- The complete error message
-- Your Python version
-- Your TensorFlow version, if relevant
-- Steps to reproduce the problem
-
-If you would like to contribute a fix or improvement, you may also **fork the repository** and submit a **Pull Request**.
-
 ---
 
 # Project Information
 
 **Version:** v2.0.0  
-**Last Update:** September 2026  
+**Last Update:** September 29, 2026
