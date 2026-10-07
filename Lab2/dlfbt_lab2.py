@@ -552,22 +552,47 @@ def run_optimizer_experiment(
     """
 
     # TODO: make the run reproducible.
-
+    set_reproducible(seed)
+    
     # TODO: build model.
-
+    model = build_baseline_model(split.X_train.shape[1])
+    
     # TODO: construct optimizer.
-
+    optimizer = optimizer_from_name(optimizer_name, learning_rate=learning_rate)
+    
     # TODO: compile model.
-
+    compile_binary_model(model=model, optimizer=optimizer)
+    
     # TODO: record start time.
-
+    start = perf_counter()
+    
     # TODO: train.
+    history = train_model(
+        model=model,
+        split=split, 
+        epochs=epochs, 
+        batch_size=batch_size, 
+        patience=patience, 
+        verbose=0,
+    )
 
     # TODO: compute elapsed time.
-
+    time = perf_counter() - start # Time in seconds
+    
     # TODO: evaluate.
+    metrics = evaluate_model(model=model, split=split)
 
     # TODO: return the result dictionary.
+
+    return {
+        "optimizer": optimizer_name,
+        "epochs_run": len(history.history["loss"]),
+        "seconds": time,
+        "test_loss": metrics["test_loss"],
+        "test_accuracy": metrics["test_accuracy"],
+        "history": history,
+        "model": model,
+    }
 
     raise NotImplementedError("TODO: implement run_optimizer_experiment")
 
@@ -607,6 +632,12 @@ def compare_optimizers(
     """
 
     # TODO: call run_optimizer_experiment once per optimizer name.
+
+
+    return [
+        run_optimizer_experiment(split, name, **kwargs)
+        for name in names
+    ]
 
     raise NotImplementedError("TODO: implement compare_optimizers")
 
