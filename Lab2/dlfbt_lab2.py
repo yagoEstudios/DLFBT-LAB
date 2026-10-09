@@ -2,8 +2,8 @@
 # DLFBT 2026/2027
 # Lab assignment 2
 # Authors:
-#   Name1 NIA1 (complete your name and NIA here)
-#   Name2 NIA2 (complete your name and NIA here)
+#   Álvaro Sáiz López   e487478
+#   Yago Clerigo Ruiz   e483273
 # ===============================================================================
 
 import numpy as np
@@ -48,14 +48,22 @@ def load_phoneme():
     """
 
     # TODO: load the CSV.
+    # The file is purely numeric with no header, so np.loadtxt is enough and
+    # returns a single 2-D float array of shape (n_samples, n_columns).
+    # The relative path assumes the notebook is run from inside Lab2/.
     path = "../data/lab2/phoneme.csv"
     dataset = np.loadtxt(path, delimiter=",")
 
     # TODO: perform a shape / validity check.
+    # Fail early with a clear message if the file is not a 2-D table with at
+    # least one feature column plus the target column.
     if dataset.ndim != 2 or dataset.shape[1] < 2:
         raise ValueError(f"Unexpected dataset shape: {dataset.shape}")
     
     # TODO:
+    # Every column except the last is a feature; the last column is the 0/1
+    # label. Slicing keeps X 2-D (n, 5) and makes y 1-D (n,), which is what
+    # Keras expects for a single sigmoid output with binary cross-entropy.
     X = dataset[:, :-1].astype(np.float64)
     y = dataset[:, -1].astype(np.float64)
 
@@ -131,6 +139,8 @@ def prepare_data(
     """
 
     # TODO: validate test_size and val_size.
+    # Both are fractions of the FULL dataset, so each must lie in [0, 1] and
+    # together they must leave a non-negative fraction for training.
     if test_size < 0.0 or test_size > 1.0:
         raise ValueError(f"Unexpected split ratio test_size : {test_size}")
     if val_size < 0.0 or val_size > 1.0:
@@ -140,19 +150,29 @@ def prepare_data(
         raise ValueError(f"Unexpected split ratio train_size : {train_size}")
         
     # TODO: first split -> train+validation and test.
+    # Hold out the test set first so it never takes part in any later
+    # decision. stratify=y keeps the ~70/30 class ratio in both parts.
     X_trval, X_test, y_trval, y_test = train_test_split(
         X, y, test_size=test_size, random_state=random_state, stratify=y,
     )
     
     # TODO: compute the validation fraction relative to train+validation.
+    # train_test_split works on what is left after removing the test set, so
+    # val_size has to be rescaled: 0.20 / (1 - 0.20) = 0.25 of the remaining
+    # 80% gives 20% of the full dataset, i.e. a 60/20/20 split.
     val_fraction = val_size / (1.0 - test_size)
 
     # TODO: second split -> train and validation.
+    # Stratify again (on y_trval) so validation has the same class balance.
     X_train, X_val, y_train, y_val = train_test_split(
         X_trval, y_trval, test_size=val_fraction, random_state=random_state, stratify=y_trval,
     )
 
     # TODO: optionally fit StandardScaler ONLY on X_train.
+    # The mean and std are learned from the training set alone and then
+    # applied to validation and test with transform(). Fitting on all the data
+    # would leak validation/test statistics into training (data leakage) and
+    # make the evaluation optimistic. After this, X_train has mean 0, std 1.
     scaler = None
     if normalize:
         scaler = StandardScaler().fit(X_train)
@@ -161,6 +181,8 @@ def prepare_data(
         X_test = scaler.transform(X_test)
                 
     # TODO: return DataSplit(...)
+    # The scaler is returned too (None if normalize=False) so new data can be
+    # transformed with the same training statistics.
 
     return DataSplit(X_train, X_val, X_test, y_train, y_val, y_test, scaler)
 
@@ -185,6 +207,10 @@ def build_baseline_model(input_dim, hidden_units=8):
     """
 
     # TODO:
+    # One hidden ReLU layer and a single sigmoid unit whose output is read as
+    # P(y = 1 | x). With input_dim=5 and 8 hidden units this has
+    # 5*8 + 8 + 8*1 + 1 = 57 trainable parameters. Not compiled here, so the
+    # caller can choose the optimizer.
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(input_dim,)),
         tf.keras.layers.Dense(hidden_units, activation="relu"),
@@ -231,8 +257,13 @@ def compile_binary_model(
         optimizer = optimizer_from_name(optimizer, learning_rate=learning_rate)
 
         # TODO:
-    
+        # Otherwise pass `optimizer` through unchanged: Keras accepts either
+        # an optimizer object or a string name (which uses its default
+        # learning rate).
 
+    # Binary cross-entropy is the negative log-likelihood of a Bernoulli
+    # output, the natural loss for a sigmoid unit; accuracy uses a 0.5
+    # threshold on the predicted probability.
     model.compile(
         optimizer=optimizer,
         loss="binary_crossentropy",
@@ -289,6 +320,11 @@ def train_model(
     """
 
     # TODO:
+    # Fit on the training partition only and pass the validation partition as
+    # validation_data, so val_loss is computed at the end of every epoch.
+    # EarlyStopping watches val_loss: after `patience` epochs without
+    # improvement it stops and restores the weights of the best epoch, so
+    # `epochs` is only an upper bound. The test set is not touched here.
     callback = make_early_stopping(patience=patience)
     history = model.fit(
         x=split.X_train,
@@ -324,14 +360,19 @@ def evaluate_model(model, split):
 
     # TODO:
     # loss, accuracy = model.evaluate(...)
+    # evaluate() returns [loss, metric] in the order given to compile(). It
+    # runs on the test partition, which played no part in fitting, scaling or
+    # early stopping, so this is the unbiased estimate of generalization.
+    # verbose=0 suppresses the progress bar printed on every evaluation.
     loss, accuracy = model.evaluate(
         x=split.X_test,
-        y=split.y_test
+        y=split.y_test,
+        verbose=0,
     )
 
     results = {
-        "test_loss": loss,
-        "test_accuracy": accuracy
+        "test_loss": float(loss),
+        "test_accuracy": float(accuracy),
     }
 
     return results
@@ -362,6 +403,10 @@ def build_improved_model(input_dim):
     """
 
     # TODO: build the architecture.
+    # Two hidden layers (32 -> 16) add capacity over the 8-unit baseline,
+    # and light dropout (15% of the first layer's activations zeroed at each
+    # training step) stops that extra capacity from overfitting.
+    # 737 parameters in total.
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(input_dim,)),
         tf.keras.layers.Dense(32, activation="relu"),
@@ -372,6 +417,8 @@ def build_improved_model(input_dim):
     
 
     # TODO: compile it, preferably by reusing compile_binary_model(...).
+    # Reusing the helper keeps loss, metric and optimizer identical to the
+    # baseline, so the only difference between the two is the architecture.
 
     compile_binary_model(model,optimizer="adam",learning_rate=1e-3)
 
@@ -400,6 +447,10 @@ def build_regularized_model(input_dim, l2_strength=1e-4):
     """
 
     # TODO:
+    # L2 adds l2_strength * sum(w^2) of each hidden kernel to the loss, which
+    # pulls the weights towards zero (weight decay) and favours smoother
+    # decision boundaries. Only the kernels are penalized, not the biases.
+    # The same architecture as the dropout model, so the two are comparable.
     reg = tf.keras.regularizers.l2(l2_strength)
 
     model = tf.keras.Sequential([
@@ -437,6 +488,9 @@ def build_dropout_model(input_dim, rate=0.25):
 
     """
 
+    # Dropout randomly zeroes a fraction `rate` of the first hidden layer's
+    # outputs at each training step (scaling the rest by 1 / (1 - rate)), so
+    # units cannot co-adapt. Keras disables it automatically at inference.
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(input_dim,)),
         tf.keras.layers.Dense(32, activation="relu"),
@@ -494,7 +548,19 @@ def optimizer_from_name(name, learning_rate=1e-3):
     """
 
     # TODO: return the matching tf.keras.optimizers optimizer.
-    match name:
+    # sgd:      w <- w - lr * g
+    # momentum: SGD plus a velocity term (beta = 0.9) that accumulates past
+    #           gradients, speeding up consistent directions.
+    # nesterov: momentum with the gradient taken at the look-ahead point.
+    # adagrad:  per-parameter rate lr / sqrt(sum of past g^2); it only shrinks.
+    # rmsprop:  like Adagrad but with a moving average of g^2, so it does not
+    #           decay to zero.
+    # adam:     RMSprop-style scaling plus momentum, with bias correction.
+    # All of them receive the same learning_rate so only the update rule
+    # changes between experiments.
+    # Normalize the name so variants such as "Adam" or "RMS-prop" also match.
+    key = name.lower().replace(" ", "").replace("-", "")
+    match key:
         case "sgd":
                 return tf.keras.optimizers.SGD(learning_rate=learning_rate, momentum=0.0)
         case "momentum":
@@ -507,6 +573,10 @@ def optimizer_from_name(name, learning_rate=1e-3):
             return tf.keras.optimizers.RMSprop(learning_rate=learning_rate)
         case "adam":
             return tf.keras.optimizers.Adam(learning_rate=learning_rate)
+        case _:
+            # Fail loudly instead of returning None, which would only break
+            # later inside model.compile().
+            raise ValueError(f"Unknown optimizer: {name!r}")
                
 
 
@@ -550,21 +620,30 @@ def run_optimizer_experiment(
     """
 
     # TODO: make the run reproducible.
+    # Reset the seeds before building the model so every optimizer starts
+    # from the same initial weights and sees the same batch order.
     set_reproducible(seed)
     
     # TODO: build model.
+    # Always the same baseline architecture: the optimizer is the only
+    # variable in this experiment.
     model = build_baseline_model(split.X_train.shape[1])
     
     # TODO: construct optimizer.
+    # A fresh optimizer object per run, so no state (momentum, accumulators)
+    # carries over from a previous experiment.
     optimizer = optimizer_from_name(optimizer_name, learning_rate=learning_rate)
     
     # TODO: compile model.
     compile_binary_model(model=model, optimizer=optimizer)
     
     # TODO: record start time.
+    # perf_counter is a monotonic high-resolution clock meant for measuring
+    # intervals (it must be called: perf_counter(), not perf_counter).
     start = perf_counter()
     
     # TODO: train.
+    # Same epochs, batch size and early-stopping rule for every optimizer.
     history = train_model(
         model=model,
         split=split, 
@@ -575,12 +654,16 @@ def run_optimizer_experiment(
     )
 
     # TODO: compute elapsed time.
+    # Only the fit call is timed; model building and evaluation are excluded.
     time = perf_counter() - start # Time in seconds
     
     # TODO: evaluate.
+    # Held-out test metrics, computed once after training.
     metrics = evaluate_model(model=model, split=split)
 
     # TODO: return the result dictionary.
+    # epochs_run is the length of the loss history, i.e. how many epochs ran
+    # before early stopping fired (or the epochs limit was reached).
 
     return {
         "optimizer": optimizer_name,
@@ -630,6 +713,9 @@ def compare_optimizers(
     """
 
     # TODO: call run_optimizer_experiment once per optimizer name.
+    # The same split and the same kwargs (epochs, batch_size, learning_rate,
+    # patience, seed) are forwarded to every run, which is what makes the
+    # comparison fair.
 
 
     return [
