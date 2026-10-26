@@ -7,8 +7,9 @@ def as_sequence(x):
     """
     if x.dim() == 2:
         return x.unsqueeze(-1)
-    if x.dim () == 3:
-        return
+    if x.dim() == 3:
+        return x
+    raise ValueError(f"Expected a 2-D or 3-D input, got shape {tuple(x.shape)}")
 
 
 
