@@ -12,14 +12,11 @@ from sklearn.metrics import(
     recall_score
 )
 
+from .utils import sync
+
 def get_model_device(model):
     """Return the device where the model's parameters are stored."""
     return next(model.parameters()).device
-
-def sync(device):
-    "Wait for the pending GPU operations to finish"
-    if device.type == "cuda":
-        torch.cude.synchronize(device)
 
 @torch.no_grad()
 def predict(model,X,batch_size=512,device=None, return_probabilities=False):
