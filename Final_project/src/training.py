@@ -15,6 +15,7 @@ def to_tensor(array,dtype):
     return torch.as_tensor(np.asarray(array),dtype=dtype)
 
 def make_loader(X,y,batch_size=64, shuffle=False, seed = None):
+    """Wrap X and y in a DataLoader that provides (optionally shuffled) mini-batches for training/evaluation."""
     dataset = TensorDataset(to_tensor(X,torch.float32), to_tensor(y,torch.long))
     generator = None
     if shuffle and seed is not None:
@@ -23,9 +24,191 @@ def make_loader(X,y,batch_size=64, shuffle=False, seed = None):
     return DataLoader(dataset,batch_size=batch_size,shuffle=shuffle,generator=generator)
 
 def train_one_epoch(model,loader,criterion,optimizer,device,grad_clip=None):
-    pass
+    """Train the model on all batches once and return (mean loss, accuracy)."""
+    
+    model.train()
+    total_loss, correct, n = 0.0, 0, 0
+    for X_batch, y_batch in loader:
+        X_batch = X_batch.to(device,non_blocking=True)
+        y_batch = y_batch.to(device,non_blocking=True)
+
+        optimizer.zero_grad()
+        logits = model(X_batch)
+        loss = criterion(logits,y_batch)
+        loss.backward()
+        if grad_clip is not None:
+            nn.utils.clip_grad_norm_(model.parameters(),grad_clip)
+        optimizer.step()
+
+        total_loss += loss.item() * y_batch.size(0)
+        correct += (logits.argmax(dim=1) == y_batch).sum().item() 
+        n += y_batch.size(0)
+    
+    return total_loss / n,  correct / n
+
+@torch.no_grad()
+def validate(model, loader, criterion, device):
+    """Measure Loss and accuracy using validation data"""
+    model.eval()
+    total_loss, correct, n, = 0.0, 0, 0
+
+    for X_batch, y_batch in loader:
+        X_batch = X_batch.to(device,non_blocking=True)
+        y_batch = y_batch.to(device,non_blocking=True)
+
+        logits = model(X_batch)
+        loss = criterion(logits,y_batch)
+
+        total_loss += loss.item() * y_batch.size(0)
+        correct += (logits.argmax(dim=1) == y_batch).sum().item() 
+        n += y_batch.size(0)
+
+    return total_loss / n, correct / n 
+
+class EarlyStopping:
+    """Stop training when validation loss has not improved for patience epochs"""
+    def __init__(self, patience = 8, min_delta=0.0):
+        self.patience = patience
+        self.min_delta = min_delta
+        self.best_loss = float("inf")
+        self.best_epoch = 0
+        self.best_state = None
+        self.counter = 0
+        
+    def check(self, val_loss, model, epoch):
+        """Check if val_loss improved, save the best weights, and return True when training should stop."""
+        if val_loss < self.best_loss - self.min_delta:
+            self.best_loss = val_loss
+            self.best_epoch = epoch
+            self.best_state = copy.deepcopy(model.state_dict())
+            self.counter = 0
+        else:
+            self.counter += 1
+        return self.patience is not None and self.counter >= self.patience
 
 
 
-def fit(*args, **kwargs):
-    raise NotImplementedError("fit() has not been implemented yet.")
+def fit(
+    model,
+    X_train,
+    y_train,
+    X_val,
+    y_val,
+    epochs=50,
+    batch_size=64,
+    learning_rate=1e-3,
+    weight_decay=0.0,
+    patience=8,
+    min_delta=0.0,
+    seed=None,
+    device=None,
+    grad_clip=1.0,
+    restore_best_weights=True,
+    checkpoint_path=None,
+    verbose=True,
+):
+    """Train `model` with Adam, cross-entropy and early stopping on validation loss.
+
+    model: network that returns class logits.
+    X_train, y_train, X_val, y_val: training and validation data.
+    epochs: max number of epochs.
+    batch_size: samples per batch.
+    learning_rate: Adam learning rate.
+    weight_decay: L2 regularization.
+    patience: epochs without improvement before stopping (None disables it).
+    min_delta: min loss decrease that counts as improvement.
+    seed: seed for reproducibility.
+    device: "cuda", "cpu" or None (auto).
+    grad_clip: max gradient norm (None disables it).
+    restore_best_weights: reload the best epoch's weights at the end.
+    checkpoint_path: optional path to save the best weights.
+    verbose: print progress each epoch.
+
+    Returns a dict with the model, history, training time, epochs completed,
+    best epoch, best val loss and peak GPU memory.
+    """
+    if seed is not None:
+        set_seed(seed)
+
+    device = get_device(device)
+    model = model.to(device)
+
+    train_loader = make_loader(X_train, y_train, batch_size, shuffle=True, seed=seed)
+    val_loader = make_loader(X_val, y_val, batch_size, shuffle=False)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(
+        model.parameters(), lr=learning_rate, weight_decay=weight_decay
+    )
+    stopper = EarlyStopping(patience=patience, min_delta=min_delta)
+
+    history = {
+        "train_loss": [],
+        "val_loss": [],
+        "train_accuracy": [],
+        "val_accuracy": [],
+        "epoch_time": [],
+    }
+
+    if device.type == "cuda":
+        torch.cuda.reset_peak_memory_stats(device)
+
+    sync(device)
+    start = time.perf_counter()
+
+    for epoch in range(1, epochs + 1):
+        epoch_start = time.perf_counter()
+
+        train_loss, train_acc = train_one_epoch(
+            model, train_loader, criterion, optimizer, device, grad_clip
+        )
+        val_loss, val_acc = validate(model, val_loader, criterion, device)
+
+        sync(device)
+        history["train_loss"].append(train_loss)
+        history["val_loss"].append(val_loss)
+        history["train_accuracy"].append(train_acc)
+        history["val_accuracy"].append(val_acc)
+        history["epoch_time"].append(time.perf_counter() - epoch_start)
+
+        stop = stopper.check(val_loss, model, epoch)
+        if stopper.best_epoch == epoch and checkpoint_path is not None:
+            Path(checkpoint_path).parent.mkdir(parents=True, exist_ok=True)
+            torch.save(stopper.best_state, checkpoint_path)
+
+        if verbose:
+            print(
+                f"Epoch {epoch:3d}/{epochs} | "
+                f"train loss {train_loss:.4f} acc {train_acc:.4f} | "
+                f"val loss {val_loss:.4f} acc {val_acc:.4f} | "
+                f"{history['epoch_time'][-1]:.2f}s"
+                + (" *" if stopper.best_epoch == epoch else "")
+            )
+
+        if stop:
+            if verbose:
+                print(
+                    f"Early stopping at epoch {epoch}; "
+                    f"best epoch {stopper.best_epoch} (val loss {stopper.best_loss:.4f})"
+                )
+            break
+
+    sync(device)
+    training_time = time.perf_counter() - start
+
+    if restore_best_weights and stopper.best_state is not None:
+        model.load_state_dict(stopper.best_state)
+
+    peak_memory_mb = None
+    if device.type == "cuda":
+        peak_memory_mb = torch.cuda.max_memory_allocated(device) / 1024**2
+
+    return {
+        "model": model,
+        "history": history,
+        "training_time": training_time,
+        "epochs_completed": len(history["train_loss"]),
+        "best_epoch": stopper.best_epoch,
+        "best_val_loss": stopper.best_loss,
+        "peak_gpu_memory_mb": peak_memory_mb,
+    }
