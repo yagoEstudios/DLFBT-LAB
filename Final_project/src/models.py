@@ -1,15 +1,22 @@
 import torch
 from torch import nn
 
-def as_sequence(x):
-    """Reshape (batch_size, n_features) into a sequence (batch_size, n_features, 1);
-    3-D inputs pass through unchanged.
-    """
-    if x.dim() == 2:
-        return x.unsqueeze(-1)
-    if x.dim() == 3:
-        return x
-    raise ValueError(f"Expected a 2-D or 3-D input, got shape {tuple(x.shape)}")
+# All the models recieve the data in (B,561) dimensions
+
+def adapt_input(x, model_type):
+    """Receives x with shape (B, n_features) and returns it with the shape expected by each model."""
+    if x.dim() != 2:
+        raise ValueError(f"Expected a 2-D input (B, n_features), got shape {tuple(x.shape)}")
+
+    match model_type:
+        case "rnn":
+            # (B, S=n_features, input_size=1)
+            return x.unsqueeze(-1)
+        case "cnn":
+            # (B, C=1, S=n_features)
+            return x.unsqueeze(1)
+        case _:
+            raise ValueError(f"Unknown model_type: {model_type}")
 
 
 
