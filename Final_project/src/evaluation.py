@@ -97,10 +97,11 @@ def evaluate_model(model,X,y,batch_size=512,device=None,class_names=None):
 
 
 def count_parameters(model):
-    """Return the total number of parameters of the model."""
+    """Return the number of trainable parameters of the model."""
     total = 0
     for p in model.parameters():          # cada p es un tensor de pesos (una matriz W o un vector b)
-        total += p.numel()            
+        if p.requires_grad:
+            total += p.numel()
     return total
 
 @torch.no_grad()

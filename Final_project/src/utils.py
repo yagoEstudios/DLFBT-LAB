@@ -8,7 +8,7 @@ import torch
 def set_seed(seed = 42, deterministic=True):
     """Seed every random number generator used in the project."""
 
-    os.environ["PYTHONHASEED"] = str(seed)
+    os.environ["PYTHONHASHSEED"] = str(seed)
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -18,7 +18,7 @@ def set_seed(seed = 42, deterministic=True):
         torch.backends.cudnn.deterministic = True
         torch.backends.cudnn.benchmark = False
 
-    return  seed
+    return seed
 
 def get_device(device=None):
     """Return a torch.device, defaults to CUDA when available."""

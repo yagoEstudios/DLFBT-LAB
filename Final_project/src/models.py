@@ -9,7 +9,7 @@ def adapt_input(x, model_type):
         raise ValueError(f"Expected a 2-D input (B, n_features), got shape {tuple(x.shape)}")
 
     match model_type:
-        case "rnn":
+        case "rnn" | "lstm":
             # (B, S=n_features, input_size=1)
             return x.unsqueeze(-1)
         case "cnn":
@@ -29,6 +29,9 @@ class DNNClassifier(nn.Module):
 
     Every feature gets its own independent weights, so the order of the
     features does not matter.
+
+    sequence_length only exists for compatibility with the notebook: for the DNN
+    the n_features values are a flat vector, not a sequence.
     """
 
     def __init__(
@@ -38,8 +41,13 @@ class DNNClassifier(nn.Module):
         hidden_dims=(256, 128),
         dropout=0.3,
         batch_norm=True,
+        sequence_length=None,
     ):
         super().__init__()
+        if sequence_length is not None and sequence_length != n_features:
+            raise ValueError(
+                f"DNN expects sequence_length == n_features, got {sequence_length} and {n_features}"
+            )
         self.input_dim = n_features
 
         layers = []
@@ -63,9 +71,49 @@ class DNNClassifier(nn.Module):
         return self.classifier(self.hidden_layers(x))
 
 
-class RNNClassifier:
-    def __init__(self, *args, **kwargs):
-        pass
+class RNNClassifier(nn.Module):
+    """Vanilla recurrent network that reads the features one step at a time.
+
+    (batch, n_features) -> (batch, n_features, 1)
+    -> RNN x num_layers -> (batch, S, hidden_size)
+    -> last hidden state -> (batch, hidden_size)
+    -> Dropout -> Linear -> (batch, n_classes)
+
+    The state is carried along the 561 steps, so the model assumes the order of the
+    features matters, but gradients can vanish over such a long sequence.
+    """
+
+    def __init__(
+        self,
+        input_size,
+        n_classes=6,
+        hidden_size=64,
+        num_layers=1,
+        dropout=0.3,
+    ):
+        super().__init__()
+        self.input_size = input_size
+
+        # the recurrent layer reads one value per time step, so its input_size is 1
+        self.rnn = nn.RNN(
+            input_size=1,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=dropout if num_layers > 1 else 0.0,
+        )
+        self.dropout = nn.Dropout(dropout)
+        self.classifier = nn.Linear(hidden_size, n_classes)
+
+    def forward(self, x):
+        if x.dim() != 2 or x.size(1) != self.input_size:
+            raise ValueError(
+                f"RNN expects input of shape (batch, {self.input_size}), got {tuple(x.shape)}"
+            )
+        x = adapt_input(x, "rnn")          # (B, S, 1)
+        outputs, _ = self.rnn(x)              # (B, S, hidden_size)
+        x = outputs[:, -1, :]                 # (B, hidden_size)
+        return self.classifier(self.dropout(x))
 
 
 class CNNClassifier(nn.Module):
@@ -118,6 +166,46 @@ class CNNClassifier(nn.Module):
         return self.classifier(self.dropout(x))
 
 
-class LSTMClassifier:
-    def __init__(self, *args, **kwargs):
-        pass
+class LSTMClassifier(nn.Module):
+    """LSTM network that reads the features one step at a time.
+
+    (batch, n_features) -> (batch, n_features, 1)
+    -> LSTM x num_layers -> (batch, S, hidden_size)
+    -> last hidden state -> (batch, hidden_size)
+    -> Dropout -> Linear -> (batch, n_classes)
+
+    The memory cell helps keep information over the long sequence, at the cost
+    of more parameters and a slower epoch than the vanilla RNN.
+    """
+
+    def __init__(
+        self,
+        input_size,
+        n_classes=6,
+        hidden_size=64,
+        num_layers=1,
+        dropout=0.3,
+    ):
+        super().__init__()
+        self.input_size = input_size
+
+        # the recurrent layer reads one value per time step, so its input_size is 1
+        self.rnn = nn.LSTM(
+            input_size=1,
+            hidden_size=hidden_size,
+            num_layers=num_layers,
+            batch_first=True,
+            dropout=dropout if num_layers > 1 else 0.0,
+        )
+        self.dropout = nn.Dropout(dropout)
+        self.classifier = nn.Linear(hidden_size, n_classes)
+
+    def forward(self, x):
+        if x.dim() != 2 or x.size(1) != self.input_size:
+            raise ValueError(
+                f"LSTM expects input of shape (batch, {self.input_size}), got {tuple(x.shape)}"
+            )
+        x = adapt_input(x, "lstm")          # (B, S, 1)
+        outputs, _ = self.rnn(x)              # (B, S, hidden_size)
+        x = outputs[:, -1, :]                 # (B, hidden_size)
+        return self.classifier(self.dropout(x))
