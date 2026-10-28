@@ -103,15 +103,15 @@ Upload the requested file to the [course Moodle page](https://posgrado.uam.es/co
 | Lab               | Due Date                    | Status             |
 | ----------------- | --------------------------- | ------------------ |
 | **Lab 1**         | Friday, 2026-09-25 at 13:00 | ❌ Deadline passed |
-| **Lab 2**         | Friday, 2026-10-09 at 13:00 | ⏳ Not yet due     |
-| **Final Project** | Friday, 2026-10-23 at 13:00 | ⏳ Not yet due     |
+| **Lab 2**         | Friday, 2026-10-09 at 13:00 | ❌ Deadline passed |
+| **Final Project** | Friday, 2026-10-30 at 13:00 | ⏳ Not yet due     |
 
 ### Exam Dates
 
 | Lab       | Exam Date                   | Status                               |
 | --------- | --------------------------- | ------------------------------------ |
 | **Lab 1** | Friday, 2026-09-25 at 16:00 | ✅ Done — grades published on Moodle |
-| **Lab 2** | Friday, 2026-10-09 at 18:00 | ⏳ Upcoming                          |
+| **Lab 2** | Friday, 2026-10-09 at 16:00 | ✅ Done — grades published on Moodle |
 
 ---
 
