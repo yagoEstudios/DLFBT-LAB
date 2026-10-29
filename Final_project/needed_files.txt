@@ -1,0 +1,11 @@
+Files to submit (zip: name_surname_name_surname.zip)
+
+src/__init__.py
+src/models.py
+src/training.py
+src/evaluation.py
+src/utils.py            (not listed in README, but training.py imports it)
+lab3_2026.ipynb
+Project report (PDF)    (required by the notebook; ask whether it goes inside the zip)
+
+Not needed: results/, data (the notebook reads ../data/final_project/)
