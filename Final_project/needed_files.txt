@@ -9,3 +9,8 @@ lab3_2026.ipynb
 Project report (PDF)    (required by the notebook; ask whether it goes inside the zip)
 
 Not needed: results/, data (the notebook reads ../data/final_project/)
+
+Where the names go (yours and your partner's)
+- Zip file name: name_surname_name_surname.zip   (the only place the README requires)
+- Project report: title page                     (not specified, but recommended)
+- lab3_2026.ipynb: first markdown cell           (optional)
