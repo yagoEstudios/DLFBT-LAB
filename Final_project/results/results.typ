@@ -15,6 +15,9 @@
   caption: cap,
 )
 
+= DLFBT Final Project
+== Yago Clérigo Ruiz
+== Álvaro Sáiz Lopez
 = Results
 
 We compared four deep-learning architectures on multiclass human activity recognition: a fully connected network
