@@ -40,8 +40,8 @@ The features are standardised with a `StandardScaler` fitted on the training spl
   did not tune it per model.
 - *Batch size 64.* That is roughly 87 updates per epoch with 5551 samples. It is enough to converge in a few dozen
   epochs, the gradient noise helps a bit as regularisation, and the GPU is still used well.
-- *Up to 50 epochs, early stopping (patience 8), restoring the best weights.* 50 is just a ceiling; no model got
-  there. Early stopping watches the validation loss. We used a patience of 8 because the CNN and the recurrent
+- *Up to 50 epochs, early stopping (patience 8), restoring the best weights.* 50 is just a ceiling, and no model
+  got there. Early stopping watches the validation loss. We used a patience of 8 because the CNN and the recurrent
   models have quite noisy validation curves and a smaller value stopped them too soon. The weights from the best
   validation epoch are restored at the end, so the choice of model depends only on validation data.
 - *Gradient clipping (norm 1.0).* The RNN and LSTM are unrolled over 561 steps and can easily suffer from exploding
@@ -106,9 +106,9 @@ because the test set is fairly balanced (420 to 537 samples per class), so no cl
 
 #fig("predictive_performance", [Predictive metrics per model.], w: 85%)
 
-Our interpretation is that, with these features, it is better to treat the 561 values as one vector than as a
-sequence. They are hand-crafted statistics (means, energies, frequency coefficients…), and the order in which they
-appear has no temporal meaning, which is precisely what recurrent and convolutional layers rely on.
+We think that, with these features, it is better to treat the 561 values as one vector than as a sequence. They
+are hand-crafted statistics (means, energies, frequency coefficients and so on), and the order they come in has no
+temporal meaning, while recurrent and convolutional layers are built to take advantage of exactly that kind of order.
 
 == Computational cost
 
@@ -132,7 +132,7 @@ None of them hit the 50-epoch limit.
 
 #fig("inference_time", [Inference time on the test set.], w: 60%)
 
-So here, more parameters does not mean more cost. The DNN is both the most accurate and the cheapest model, and
+In this case, having more parameters does not make a model more expensive. The DNN is both the most accurate and the cheapest model, and
 the recurrent models, though much smaller, are slower and worse.
 
 == Training curves
@@ -214,7 +214,7 @@ different epoch.
 deviation (0.009), so its lead is much bigger than the noise between runs. The RNN is always last. The CNN and
 the LSTM do swap places, though. With seed 42 the CNN is clearly ahead (0.845 vs. 0.787), but with seeds 1 and 123
 the LSTM is better, and on average they are practically tied (0.819 vs. 0.815). Their standard deviations
-(0.025–0.028) are about as large as the gap between them.
+(0.025 and 0.028) are about as large as the gap between them.
 
 The number of epochs also changes with the seed (13 to 20 for the DNN, 28 to 34 for the RNN), and training times
 change with it. With seed 42 we get exactly the same numbers as in the main comparison, so the pipeline is
@@ -269,11 +269,11 @@ better up to 128 and then worse at 256, and that model also stops sooner (21 epo
 LSTM starts to overfit or is harder to train, so going bigger does not reliably help.
 
 *Effect on cost.* Cost, on the other hand, goes up a lot. Between 32 and 256 the parameters increase about 57
-times (4,678 to 266,758), training time about 8 times (11.7 s to 92.9 s) and inference time about 26 times. One
-detail: the run with hidden size 64 does not match the LSTM from the main comparison (macro F1 0.807 vs. 0.787),
-even with the same seed. In the main comparison the four models are built one after another after a single
-`set_seed` call, so the LSTM gets a different initialisation. This is one more sign of how much the seed matters.
+times (4,678 to 266,758), training time about 8 times (11.7 s to 92.9 s) and inference time about 26 times. Note
+that the run with hidden size 64 does not match the LSTM from the main comparison (macro F1 0.807 vs. 0.787), even
+with the same seed. In the main comparison the four models are built one after another after a single `set_seed`
+call, so the LSTM gets a different initialisation. This shows again how much the seed matters.
 
 *Conclusion.* What holds the LSTM back is not its size but how the input is presented. Reading 561 engineered
 features one at a time as if they were a time series gives the recurrent model no real temporal structure to
-learn from. A small hidden size (32–64) gives the best balance between results and cost.
+learn from. A small hidden size (32 or 64) gives the best balance between results and cost.
