@@ -1,3 +1,7 @@
 {
-    "python-envs.defaultEnvManager": "ms-python.python:system"
+    "python-envs.defaultEnvManager": "ms-python.python:system",
+    "python.defaultInterpreterPath": "${env:LOCALAPPDATA}\\venvs\\dlfbt\\Scripts\\python.exe",
+    "terminal.integrated.env.windows": {
+        "UV_PROJECT_ENVIRONMENT": "${env:LOCALAPPDATA}\\venvs\\dlfbt"
+    }
 }
